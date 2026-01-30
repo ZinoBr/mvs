@@ -105,56 +105,45 @@ MVS <- function(x, y, views, type="StaPLR", levels=NULL, alphas=c(0,1), nnc=c(0,
   if(progress){
     message("Level 1 \n")
   }
-
   ## Fit lowest-level baselearners
-  arg_list <- list(X = x, 
-                   y=y,
-                   views=views[,1L],
-                   type=type[1L], 
-                   ...)
-  if (type[levels] == "StaPLR") {
-    arg_list <- append(arg_list, list(
-      alpha1=alphas[1L], 
-      ll1=ll[1L],
-      seed=seeds[1L],
-      progress=progress, 
-      parallel=parallel, 
+  arg_list <- list(
+      X = x,
+      y = y,
+      views = views[, 1L],
+      type = type[[1L]],
+      alpha1 = alphas[1L],
+      ll1 = ll[1L],
+      seed = seeds[1L],
+      progress = progress,
+      parallel = parallel,
       relax.base = relax[1L],
       penalty.weights.base = translate_adaptive_argument(adaptive[1L]),
-      na.action=na.action, 
-      na.arguments=na.arguments))
-  } else if (type[levels] == "RF") {
-    arg_list <- append(arg_list, list(
-      na.action=na.action, 
-      na.arguments=na.arguments))
-  }
-  pred_functions[[1L]] <- do.call(learn, arg_list)
+      na.action = na.action,
+      na.arguments = na.arguments
+      )
+    
+    pred_functions[[1L]] <- do.call(learn, arg_list)
 
   ## Fit intermediate-level learners
   if(levels > 2){
     for(i in 2L:ncol(views)){
       if(progress) message(paste("Level", i, "\n"))
-      arg_list <- list(X = pred_functions[[i-1L]]$CVs, 
-                       y=y,
-                       views=condense(views, level=i),
-                       type=type[i], 
-                       ...)
-      if (type[levels] == "StaPLR") {
-        arg_list <- append(arg_list, list(
-          alpha1=alphas[i], 
-          ll1=ll[i],
-          seed=seeds[i],
-          progress=progress, 
-          parallel=parallel, 
-          relax.base = relax[i],
-          penalty.weights.base = translate_adaptive_argument(adaptive[i]),
-          na.action=na.action, 
-          na.arguments=na.arguments))
-      } else if (type[levels] == "RF") {
-        arg_list <- append(arg_list, list(
-          na.action=na.action, 
-          na.arguments=na.arguments))
-      }
+      arg_list <- list(
+        X = pred_functions[[i-1L]]$CVs, 
+        y=y,
+        views=condense(views, level=i),
+        type=type[[i]],
+        alpha1=alphas[i], 
+        ll1=ll[i],
+        seed=seeds[i],
+        progress=progress, 
+        parallel=parallel, 
+        relax.base = relax[i],
+        penalty.weights.base = translate_adaptive_argument(adaptive[i]),
+        na.action=na.action, 
+        na.arguments=na.arguments
+        )
+
       pred_functions[[i]] <- do.call(learn, arg_list)
     }
   }
@@ -163,29 +152,23 @@ MVS <- function(x, y, views, type="StaPLR", levels=NULL, alphas=c(0,1), nnc=c(0,
     message(paste("Level", ncol(views)+1, "\n"))
   }
 
-  ## Fit meta learner
-  arg_list <- list(X = pred_functions[[ncol(views)]]$CVs, 
-                   y=y,
-                   views=rep(1,ncol(pred_functions[[ncol(views)]]$CVs)),
-                   type=type[levels], 
-                   generate.CVs=FALSE,
-                   ...)
-  if (type[levels] == "StaPLR") {
-    arg_list <- append(arg_list, list(
-      alpha1=alphas[ncol(views)+1], 
-      ll1=ll[ncol(views)+1],
-      seed=seeds[ncol(views)+1],
-      progress=progress, 
-      parallel=parallel, 
-      relax.base = relax[ncol(views)+1],
-      penalty.weights.base = translate_adaptive_argument(adaptive[ncol(views)+1]),
-      na.action=na.action, 
-      na.arguments=na.arguments))
-  } else if (type[levels] == "RF") {
-    arg_list <- append(arg_list, list(
-      na.action=na.action, 
-      na.arguments=na.arguments))
-  }
+  ## Fit meta learner      
+  arg_list <- list(
+    X = pred_functions[[1L]]$CVs,
+    y = y,
+    views = rep(1, ncol(pred_functions[[ncol(views)]]$CVs)),
+    type = type[[levels]],
+    generate.CVs = FALSE,
+    alpha1 = alphas[ncol(views) + 1],
+    ll1 = ll[ncol(views) + 1],
+    seed = seeds[ncol(views) + 1],
+    progress = progress,
+    parallel = parallel,
+    relax.base = relax[ncol(views) + 1],
+    penalty.weights.base = translate_adaptive_argument(adaptive[ncol(views) + 1]),
+    na.action = na.action,
+    na.arguments = na.arguments
+  )
   
   if(arg_list$na.action != "pass"){
     pred_functions[[ncol(views)+1]] <- do.call(learn, arg_list)
