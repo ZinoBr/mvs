@@ -67,7 +67,8 @@ learn <- function(X, y, views, type, generate.CVs = TRUE, ...) {
       "relax.base",
       "penalty.weights.base",
       "na.action",
-      "na.arguments"
+      "na.arguments",
+      "family"
     )
     
     dots_rf     <- dots[setdiff(names(dots), rf_drop)]
@@ -125,3 +126,4 @@ learn <- function(X, y, views, type, generate.CVs = TRUE, ...) {
   }
 
 }
+
