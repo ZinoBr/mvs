@@ -26,7 +26,7 @@ learn <- function(X, y, views, type, generate.CVs = TRUE, ...) {
     return(
       switch(
         type,
-        StaPLR = mvs::StaPLR(
+        StaPLR = StaPLR(
           X, y,
           view = views,
           skip.meta = TRUE,
@@ -123,4 +123,5 @@ learn <- function(X, y, views, type, generate.CVs = TRUE, ...) {
     
     return(pred_functions_mixed)
   }
+
 }
