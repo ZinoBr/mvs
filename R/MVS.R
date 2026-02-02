@@ -63,7 +63,7 @@
 #' predict(fit, new_X)
 #' }
 MVS <- function(x, y, views, type="StaPLR", levels=NULL, alphas=c(0,1), nnc=c(0,1), parallel=FALSE, 
-                seeds=NULL, progress=TRUE, relax = FALSE, adaptive = FALSE, na.action = "fail", na.arguments = NULL, ...){
+                seeds=NULL, progress=TRUE, relax = FALSE, adaptive = FALSE, na.action = "fail", na.arguments = NULL, family = "gaussian", ...){
   
   staplr.args <- names(list(...))
   
@@ -119,7 +119,8 @@ MVS <- function(x, y, views, type="StaPLR", levels=NULL, alphas=c(0,1), nnc=c(0,
       relax.base = relax[1L],
       penalty.weights.base = translate_adaptive_argument(adaptive[1L]),
       na.action = na.action,
-      na.arguments = na.arguments
+      na.arguments = na.arguments,
+      family = family
       )
     
     pred_functions[[1L]] <- do.call(learn, arg_list)
@@ -141,7 +142,8 @@ MVS <- function(x, y, views, type="StaPLR", levels=NULL, alphas=c(0,1), nnc=c(0,
         relax.base = relax[i],
         penalty.weights.base = translate_adaptive_argument(adaptive[i]),
         na.action=na.action, 
-        na.arguments=na.arguments
+        na.arguments=na.arguments,
+        family = family
         )
 
       pred_functions[[i]] <- do.call(learn, arg_list)
@@ -167,7 +169,8 @@ MVS <- function(x, y, views, type="StaPLR", levels=NULL, alphas=c(0,1), nnc=c(0,
     relax.base = relax[ncol(views) + 1],
     penalty.weights.base = translate_adaptive_argument(adaptive[ncol(views) + 1]),
     na.action = na.action,
-    na.arguments = na.arguments
+    na.arguments = na.arguments,
+    family = family
   )
   
   if(arg_list$na.action != "pass"){
@@ -353,3 +356,4 @@ importance.MVS <- function(x, ...){
   
   return(out)
 }
+
