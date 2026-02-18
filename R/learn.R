@@ -19,42 +19,8 @@
 # argument 'type'.
 
 learn <- function(X, y, views, type, generate.CVs = TRUE, ...) {
-  
-  # Single base learner applied to all views
-  
-  if (length(type) == 1L) {
-    return(
-      switch(
-        type,
-        StaPLR = StaPLR(
-          X, y,
-          view = views,
-          skip.meta = TRUE,
-          skip.cv = !generate.CVs,
-          ...
-        ),
-        RF = RF(
-          X, y,
-          view = views,
-          skip.meta = generate.CVs,
-          skip.cv = !generate.CVs,
-          ...
-        )
-      )
-    )
-  } else {
-    
-    # Mixed base learners
-    
-    if (any(!type %in% c("RF", "StaPLR"))) {
-      stop('Type can only be specified as "RF" or "StaPLR"')
-    }
-    
-    if (length(type) != length(unique(views))) {
-      stop("Number of base learners does not correspond to number of views")
-    }
-    
-    # Collect ... arguments and prevent StaPLR specific arguments from being forwarded to RF
+
+  # Collect ... arguments and prevent StaPLR specific arguments from being forwarded to RF
     
     dots <- list(...)
     
@@ -73,6 +39,40 @@ learn <- function(X, y, views, type, generate.CVs = TRUE, ...) {
     
     dots_rf     <- dots[setdiff(names(dots), rf_drop)]
     dots_staplr <- dots
+  
+  # Single base learner applied to all views
+  
+  if (length(type) == 1L) {
+    return(
+      switch(
+        type,
+        StaPLR = StaPLR(
+          X, y,
+          view = views,
+          skip.meta = TRUE,
+          skip.cv = !generate.CVs,
+          dots_staplr
+        ),
+        RF = RF(
+          X, y,
+          view = views,
+          skip.meta = generate.CVs,
+          skip.cv = !generate.CVs,
+          dots_rf
+        )
+      )
+    )
+  } else {
+    
+    # Mixed base learners
+    
+    if (any(!type %in% c("RF", "StaPLR"))) {
+      stop('Type can only be specified as "RF" or "StaPLR"')
+    }
+    
+    if (length(type) != length(unique(views))) {
+      stop("Number of base learners does not correspond to number of views")
+    }
     
     # Fit mixed base learners
     
@@ -126,4 +126,5 @@ learn <- function(X, y, views, type, generate.CVs = TRUE, ...) {
   }
 
 }
+
 
