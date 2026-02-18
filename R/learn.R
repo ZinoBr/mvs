@@ -46,19 +46,19 @@ learn <- function(X, y, views, type, generate.CVs = TRUE, ...) {
     return(
       switch(
         type,
-        StaPLR = StaPLR(
+        StaPLR = do.call(StaPLR, c(list(
           X, y,
           view = views,
           skip.meta = TRUE,
-          skip.cv = !generate.CVs,
-          dots_staplr
+          skip.cv = !generate.CVs),
+          dots_staplr)
         ),
-        RF = RF(
+        RF = do.call(RF, c(list(
           X, y,
           view = views,
           skip.meta = generate.CVs,
-          skip.cv = !generate.CVs,
-          dots_rf
+          skip.cv = !generate.CVs),
+          dots_rf)
         )
       )
     )
@@ -126,5 +126,6 @@ learn <- function(X, y, views, type, generate.CVs = TRUE, ...) {
   }
 
 }
+
 
 
