@@ -120,7 +120,8 @@ MVS <- function(x, y, views, type="StaPLR", levels=NULL, alphas=c(0,1), nnc=c(0,
       penalty.weights.base = translate_adaptive_argument(adaptive[1L]),
       na.action = na.action,
       na.arguments = na.arguments,
-      family = family
+      family = family,
+      ...
       )
     
     pred_functions[[1L]] <- do.call(learn, arg_list)
@@ -143,7 +144,8 @@ MVS <- function(x, y, views, type="StaPLR", levels=NULL, alphas=c(0,1), nnc=c(0,
         penalty.weights.base = translate_adaptive_argument(adaptive[i]),
         na.action=na.action, 
         na.arguments=na.arguments,
-        family = family
+        family = family,
+        ...
         )
 
       pred_functions[[i]] <- do.call(learn, arg_list)
@@ -170,7 +172,8 @@ MVS <- function(x, y, views, type="StaPLR", levels=NULL, alphas=c(0,1), nnc=c(0,
     penalty.weights.base = translate_adaptive_argument(adaptive[ncol(views) + 1]),
     na.action = na.action,
     na.arguments = na.arguments,
-    family = family
+    family = family,
+    ...
   )
   
   if(arg_list$na.action != "pass"){
@@ -356,4 +359,5 @@ importance.MVS <- function(x, ...){
   
   return(out)
 }
+
 
