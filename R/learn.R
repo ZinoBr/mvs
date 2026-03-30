@@ -22,25 +22,25 @@ learn <- function(X, y, views, type, generate.CVs = TRUE, offsets = NULL, ...) {
 
   # Collect ... arguments and prevent StaPLR specific arguments from being forwarded to RF
     
-    dots <- list(...)
-    
-    rf_drop <- c(
-      "alpha1",
-      "ll1",
-      "seed",
-      "progress",
-      "parallel",
-      "relax.base",
-      "penalty.weights.base",
-      "na.action",
-      "na.arguments",
-      "family"
-    )
-
-    staplr_drop <- c("mtry")
-    
-    dots_rf     <- dots[setdiff(names(dots), rf_drop)]
-    dots_staplr <- dots[setdiff(names(dots), staplr_drop)]
+  dots <- list(...)
+  
+  rf_drop <- c(
+    "alpha1",
+    "ll1",
+    "seed",
+    "progress",
+    "parallel",
+    "relax.base",
+    "penalty.weights.base",
+    "na.action",
+    "na.arguments",
+    "family"
+  )
+  
+  staplr_drop <- c("mtry")
+  
+  dots_rf     <- dots[setdiff(names(dots), rf_drop)]
+  dots_staplr <- dots[setdiff(names(dots), staplr_drop)]
   
   # Single base learner applied to all views
   
