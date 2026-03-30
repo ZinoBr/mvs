@@ -18,7 +18,7 @@
 # predictions. It uses switch() to apply the correct learner, depending on
 # argument 'type'.
 
-learn <- function(X, y, views, type, generate.CVs = TRUE, ...) {
+learn <- function(X, y, views, type, generate.CVs = TRUE, offsets = NULL, ...) {
 
   # Collect ... arguments and prevent StaPLR specific arguments from being forwarded to RF
     
@@ -68,7 +68,7 @@ learn <- function(X, y, views, type, generate.CVs = TRUE, ...) {
     
     # Mixed base learners
     
-    if (any(!type %in% c("RF", "StaPLR"))) {
+    if (any(!type %in% c("RF", "StaPLR", "empty"))) {
       stop('Type can only be specified as "RF" or "StaPLR"')
     }
     
@@ -89,7 +89,7 @@ learn <- function(X, y, views, type, generate.CVs = TRUE, ...) {
           RF,
           c(
             list(
-              X_i, y,
+              x = X_i, y = y,
               view = views_i,
               skip.meta = generate.CVs,
               skip.cv = !generate.CVs
@@ -97,14 +97,12 @@ learn <- function(X, y, views, type, generate.CVs = TRUE, ...) {
             dots_rf
           )
         )
-      }
-      
-      if (type[i] == "StaPLR") {
+      } else if (type[i] == "StaPLR") {
         base_learners[[i]] <- do.call(
           StaPLR,
           c(
             list(
-              X_i, y,
+              x = X_i, y = y,
               view = views_i,
               skip.meta = TRUE,
               skip.cv = !generate.CVs
@@ -112,11 +110,33 @@ learn <- function(X, y, views, type, generate.CVs = TRUE, ...) {
             dots_staplr
           )
         )
+      } else if (type[i] == "empty") {
+        base_learners[[i]] <- do.call(
+          empty, list(y = y, view = views_i))
       }
     }
     
+    for (i in offsets) {
+      ## If offsets were specified for view i, compute y - cv preds and fit RF
+      X_i <- X[, views == i[2L], drop = FALSE]
+      views_i <- rep(1L, ncol(X_i))
+      y_i <- if (is.numeric(y)) y else (as.numeric(y) - 1)
+      y_i <- y_i - base_learners[[i[1L]]]$CVs 
+      base_learners[[i[2L]]] <- do.call(
+        RF,
+        c(
+          list(
+            x = X_i, y = y_i,
+            view = views_i,
+            skip.meta = generate.CVs,
+            skip.cv = !generate.CVs
+          ),
+          dots_rf
+        )
+      )
+    }
+
     # Extract fitted models and cross-validated predictions
-    
     pred_functions_mixed <- list(
       base = lapply(base_learners, function(x) x[[1]][[1]]),
       meta = NULL,
@@ -126,9 +146,4 @@ learn <- function(X, y, views, type, generate.CVs = TRUE, ...) {
     
     return(pred_functions_mixed)
   }
-
 }
-
-
-
-

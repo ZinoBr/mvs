@@ -20,6 +20,8 @@ MVS(
   adaptive = FALSE,
   na.action = "fail",
   na.arguments = NULL,
+  family = "binomial",
+  offsets = NULL,
   ...
 )
 
@@ -38,6 +40,8 @@ mvs(
   adaptive = FALSE,
   na.action = "fail",
   na.arguments = NULL,
+  family = "binomial",
+  offsets = NULL,
   ...
 )
 }
@@ -48,7 +52,7 @@ mvs(
 
 \item{views}{a matrix of dimension nvars x (levels - 1), where each entry is an integer describing to which view each feature corresponds.}
 
-\item{type}{a character vector of length 1 or length \code{levels}, specifying the type(s) of learner to be used at each level of MVS. Use type "StaPLR" when the desired learner(s) is/are penalized GLM(s); see \code{\link[mvs]{StaPLR}} for supported families. Use type "RF" for random forests.}
+\item{type}{a character vector of length 1 or length \code{levels}, specifying the type(s) of learner to be used at each level of MVS. For mixing different baselearners within levels, specify a list with named character vectors \code{level1} and \code{meta}, each with length corresponding to the number of learners on that level. Use type "StaPLR" when the desired learner(s) is/are penalized GLM(s); see \code{\link[mvs]{StaPLR}} for supported families. Use type "RF" for random forests (see \code{\link[mvs]{RF}}).}
 
 \item{levels}{(optional) an integer >= 2, specifying the number of levels in the MVS procedure. The default is to infer the number of levels from the supplied \code{views} argument.}
 
@@ -69,6 +73,8 @@ mvs(
 \item{na.action}{character specifying what to do with missing values (NA). Options are "pass", "fail", "mean", "mice", and "missForest". Options "mice" and "missForest" requires the respective R package to be installed. Defaults to "fail".}
 
 \item{na.arguments}{(optional) a named list of arguments to pass to the imputation function (e.g. to \code{mice} or \code{missForest}).}
+
+\item{offsets}{A list of integer vectors of length 2, indicating which views should be fitted using the cross validated predictions of another view as an offset. For each element of the list, the first value indicates the view (and baselearner as specified in \code{type}) that delivers the offset, the second value indicates the view that should use the offset.}
 
 \item{...}{additional arguments to pass to the learning algorithm. See e.g. \code{\link[mvs]{StaPLR}}. Note that these arguments are passed to the the learner at every level of the MVS procedure.}
 }

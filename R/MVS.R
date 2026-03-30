@@ -19,9 +19,10 @@
 #' @param x input matrix of dimension nobs x nvars.
 #' @param y outcome vector of length nobs.
 #' @param views a matrix of dimension nvars x (levels - 1), where each entry is an integer describing to which view each feature corresponds.
-#' @param type a character vector of length 1 or length \code{levels}, specifying the type(s) of learner to be used at each level of MVS. Use type "StaPLR" when the desired learner(s) is/are penalized GLM(s); see \code{\link[mvs]{StaPLR}} for supported families. Use type "RF" for random forests.
+#' @param type a character vector of length 1 or length \code{levels}, specifying the type(s) of learner to be used at each level of MVS. For mixing different baselearners within levels, specify a list with named character vectors \code{level1} and \code{meta}, each with length corresponding to the number of learners on that level. Use type "StaPLR" when the desired learner(s) is/are penalized GLM(s); see \code{\link[mvs]{StaPLR}} for supported families. Use type "RF" for random forests (see \code{\link[mvs]{RF}}).
 #' @param levels (optional) an integer >= 2, specifying the number of levels in the MVS procedure. The default is to infer the number of levels from the supplied \code{views} argument.
 #' @param alphas a numeric vector of length \code{levels} specifying the value of the alpha parameter to use at each level.
+#' @param offsets A list of integer vectors of length 2, indicating which views should be fitted using the cross validated predictions of another view as an offset. For each element of the list, the first value indicates the view (and baselearner as specified in \code{type}) that delivers the offset, the second value indicates the view that should use the offset.    
 #' @param relax either a logical vector of length \code{levels} specifying whether model relaxation (e.g. the relaxed lasso) should be employed at each level, or a single TRUE or FALSE to enable or disable relaxing across all levels. Defaults to FALSE.
 #' @param adaptive either a logical vector of length \code{levels} specifying whether adaptive weights (e.g. the adaptive lasso) should be employed at each level, or a single TRUE or FALSE to enable or disable adaptive weights across all levels. Note that using adaptive weights is generally only sensible if alpha > 0. Defaults to FALSE.
 #' @param nnc a binary vector specifying whether to apply nonnegativity constraints or not (1/0) at each level.
@@ -63,8 +64,9 @@
 #' predict(fit, new_X)
 #' }
 MVS <- function(x, y, views, type="StaPLR", levels=NULL, alphas=c(0,1), nnc=c(0,1), parallel=FALSE, 
-                seeds=NULL, progress=TRUE, relax = FALSE, adaptive = FALSE, na.action = "fail", na.arguments = NULL, family = "gaussian", ...){
-  
+                seeds=NULL, progress=TRUE, relax = FALSE, adaptive = FALSE, na.action = "fail", na.arguments = NULL, family = "binomial",
+                offsets = NULL, ...){
+                  
   staplr.args <- names(list(...))
   
   if(!is.null(staplr.args)){
@@ -105,48 +107,56 @@ MVS <- function(x, y, views, type="StaPLR", levels=NULL, alphas=c(0,1), nnc=c(0,
   if(progress){
     message("Level 1 \n")
   }
-  ## Fit lowest-level baselearners
-  arg_list <- list(
-      X = x,
-      y = y,
-      views = views[, 1L],
-      type = type[[1L]],
-      alpha1 = alphas[1L],
-      ll1 = ll[1L],
-      seed = seeds[1L],
-      progress = progress,
-      parallel = parallel,
-      relax.base = relax[1L],
-      penalty.weights.base = translate_adaptive_argument(adaptive[1L]),
-      na.action = na.action,
-      na.arguments = na.arguments,
-      family = family,
-      ...
-      )
-    
-    pred_functions[[1L]] <- do.call(learn, arg_list)
 
+  ## Check if any offset combinations are specified, if so set relevant views to empty 
+  if (!is.null(offsets)) {
+    if (ncol(as.matrix(views)) > 1L) {
+      warning("Argument offsets only implemented for 2-level MVS, offset combinations specified will be ignored.")
+    } else {
+      ## Revise type so that the view corresponding to the 2nd elements of offsets are set to "empty"
+      for (i in offsets) type$level1[i[2L]] <- "empty" 
+    }
+  }
+
+  ## Fit lowest-level baselearners
+  arg_list <- list(X = x,
+                   y = y,
+                   views = views[, 1L],
+                   type = type[[1L]],
+                   alpha1 = alphas[1L],
+                   ll1 = ll[1L],
+                   seed = seeds[1L],
+                   progress = progress,
+                   parallel = parallel,
+                   relax.base = relax[1L],
+                   penalty.weights.base = translate_adaptive_argument(adaptive[1L]),
+                   na.action = na.action,
+                   na.arguments = na.arguments,
+                   family = family,
+                   offsets = offsets,
+                   ...)
+    
+  pred_functions[[1L]] <- do.call(learn, arg_list)
+  
   ## Fit intermediate-level learners
   if(levels > 2){
     for(i in 2L:ncol(views)){
       if(progress) message(paste("Level", i, "\n"))
-      arg_list <- list(
-        X = pred_functions[[i-1L]]$CVs, 
-        y=y,
-        views=condense(views, level=i),
-        type=type[[i]],
-        alpha1=alphas[i], 
-        ll1=ll[i],
-        seed=seeds[i],
-        progress=progress, 
-        parallel=parallel, 
-        relax.base = relax[i],
-        penalty.weights.base = translate_adaptive_argument(adaptive[i]),
-        na.action=na.action, 
-        na.arguments=na.arguments,
-        family = family,
-        ...
-        )
+      arg_list <- list(X = pred_functions[[i-1L]]$CVs, 
+                       y=y,
+                       views=condense(views, level=i),
+                       type=type[[i]],
+                       alpha1=alphas[i], 
+                       ll1=ll[i],
+                       seed=seeds[i],
+                       progress=progress, 
+                       parallel=parallel, 
+                       relax.base = relax[i],
+                       penalty.weights.base = translate_adaptive_argument(adaptive[i]),
+                       na.action=na.action, 
+                       na.arguments=na.arguments,
+                       family = family,
+                       ...)
 
       pred_functions[[i]] <- do.call(learn, arg_list)
     }
@@ -157,24 +167,22 @@ MVS <- function(x, y, views, type="StaPLR", levels=NULL, alphas=c(0,1), nnc=c(0,
   }
 
   ## Fit meta learner      
-  arg_list <- list(
-    X = pred_functions[[1L]]$CVs,
-    y = y,
-    views = rep(1, ncol(pred_functions[[ncol(views)]]$CVs)),
-    type = type[[levels]],
-    generate.CVs = FALSE,
-    alpha1 = alphas[ncol(views) + 1],
-    ll1 = ll[ncol(views) + 1],
-    seed = seeds[ncol(views) + 1],
-    progress = progress,
-    parallel = parallel,
-    relax.base = relax[ncol(views) + 1],
-    penalty.weights.base = translate_adaptive_argument(adaptive[ncol(views) + 1]),
-    na.action = na.action,
-    na.arguments = na.arguments,
-    family = family,
-    ...
-  )
+  arg_list <- list(X = pred_functions[[1L]]$CVs,
+                   y = y,
+                   views = rep(1, ncol(pred_functions[[ncol(views)]]$CVs)),
+                   type = type[[levels]],
+                   generate.CVs = FALSE,
+                   alpha1 = alphas[ncol(views) + 1],
+                   ll1 = ll[ncol(views) + 1],
+                   seed = seeds[ncol(views) + 1],
+                   progress = progress,
+                   parallel = parallel,
+                   relax.base = relax[ncol(views) + 1],
+                   penalty.weights.base = translate_adaptive_argument(adaptive[ncol(views) + 1]),
+                   na.action = na.action,
+                   na.arguments = na.arguments,
+                   family = family,
+                   ...)
   
   if(arg_list$na.action != "pass"){
     pred_functions[[ncol(views)+1]] <- do.call(learn, arg_list)
