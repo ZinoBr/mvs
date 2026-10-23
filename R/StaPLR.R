@@ -157,6 +157,37 @@ StaPLR <- function(x, y, view, view.names = NULL, family = "binomial", correct.f
   if (is.matrix(y) && ncol(y) > 1L)
     stop("StaPLR does not yet support response variables comprising multiple columns.")
 
+  # Generate original_view object for potential use of a data frame with categorical predictors
+  original_view <- NULL
+  
+  # Expand X with dummy variables if factors are present
+  if (is.data.frame(x)) {
+    
+    # Save original view indices
+    original_view <- view
+    
+    # Use model.frame to ensure rows with missing data are not omitted
+    model_data <- model.frame(~ ., data = x, na.action = na.pass)
+    
+    # Expand x so that for each factor dummy variables are created
+    expanded_x <- model.matrix( ~ ., data = model_data)
+    
+    # Save the original predictor index for each column
+    predictor_index <- attr(expanded_x, "assign")
+    
+    # Remove the intercept
+    expanded_x <- expanded_x[, -1, drop = FALSE]
+    predictor_index <- predictor_index[-1]
+    
+    # Expand view index vector
+    expanded_view_ind <- view[predictor_index]
+    
+    # Replace the original data frame and view index vector
+    x <- expanded_x
+    view <- expanded_view_ind
+    
+  }
+    
   #object initialization
   V <- length(unique(view))
   n <- if (is.matrix(y)) nrow(y) else length(y)
