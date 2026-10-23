@@ -691,6 +691,21 @@ staplr <- StaPLR
 predict.StaPLR <- function(object, newx, newcf = NULL, predtype = "response", 
                            cvlambda = "lambda.min", ...){
 
+  # Expand newx if input is a data frame
+  if (is.data.frame(newx)) {
+    
+    # Preserve rows containing missing values
+    model_data <- model.frame(
+      ~ .,
+      data = newx,
+      na.action = na.pass
+    )
+    
+    # Create dummy columns and remove the intercept
+    expanded_x <- model.matrix(~ ., data = model_data)
+    newx <- expanded_x[, -1, drop = FALSE]
+  }
+  
   V <- length(unique(object$view))
   n <- nrow(newx)
   metadat <- object$metadat
