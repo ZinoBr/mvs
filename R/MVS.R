@@ -257,8 +257,25 @@ predict.MVS <- function(object, newx, predtype = "response", cvlambda = "lambda.
           predict(object[[i]]$models[[j]], x[, object[[i]]$view == j, drop=FALSE], type = "response", ...)
         }
       } else if (inherits(object[[i]]$models[[j]], c("cv.glmnet", "glmnet"))) {
+
+        if (is.data.frame(x)) {
+          
+          # Keeps rows containing missing value
+          model_data <- model.frame(~ ., data = x[, object[[i]]$original_view == j, drop =
+                                                    FALSE], na.action = na.pass)
+          
+          # Expand factors and remove the intercept
+          expanded_x <- model.matrix( ~ ., data = model_data)
+          x_j <- expanded_x[, -1, drop = FALSE]
+          
+          
+          Z[,j] <- predict(object[[i]]$models[[j]], x_j, s = cvlambda, type = pt, ...)
+          
+        } else{
+          
         Z[,j] <- predict(object[[i]]$models[[j]], x[, object[[i]]$view == j, drop=FALSE],
                         s = cvlambda, type = pt, ...)
+        }
       }
     }
     x <- Z
