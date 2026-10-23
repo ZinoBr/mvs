@@ -77,6 +77,8 @@ learn <- function(X, y, views, type, generate.CVs = TRUE, offsets = NULL, ...) {
     }
     
     # Fit mixed base learners
+
+    if(is.data.frame(X)){ original_view <- views }
     
     base_learners <- list()
     
@@ -143,6 +145,9 @@ learn <- function(X, y, views, type, generate.CVs = TRUE, offsets = NULL, ...) {
       CVs  = do.call(cbind, lapply(base_learners, `[[`, "CVs")),
       view = as.vector(views)
     )
+
+    # Add original view indices to output if X is a data frame
+    if(is.data.frame(X)){ pred_functions_mixed$original_view <- original_view}
     
     return(pred_functions_mixed)
   }
