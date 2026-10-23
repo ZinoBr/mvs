@@ -635,6 +635,11 @@ StaPLR <- function(x, y, view, view.names = NULL, family = "binomial", correct.f
     "metadat" = metadat
   )
 
+  # Add original view indices to output
+  if (!is.null(original_view)) {
+    out$original_view <- original_view
+  }
+      
   class(out) <- "StaPLR"
 
   # return output
