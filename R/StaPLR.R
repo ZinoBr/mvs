@@ -220,17 +220,17 @@ StaPLR <- function(x, y, view, view.names = NULL, family = "binomial", correct.f
       if(!is.null(seed)){
         set.seed(base.seeds[v])
       }
-      if(anyNA(x[, view == v])){
-        if(any(check_partial_missings(x[, view == v]))){
+      if(anyNA(x[, view == v, drop = FALSE])){
+        if(any(check_partial_missings(x[, view == v, drop = FALSE]))){
           warning("Partially missing observations found in view ", v,
                   ". These observations will be treated as if all their values for view ", v,
                   " are missing. It may be more efficient to perform feature-level imputation. The partially missing observations are: ",
-                  paste(which(check_partial_missings(x[, view == v])), collapse = ", "))
+                  paste(which(check_partial_missings(x[, view == v, drop = FALSE])), collapse = ", "))
         }
-        x_train <- na.omit(x[, view == v])
+        x_train <- na.omit(x[, view == v, drop = FALSE])
         y_train <-  y[-attr(x_train, "na.action")]
       }else{
-        x_train <- x[, view == v]
+        x_train <- x[, view == v, drop = FALSE]
         y_train <- y
       }
       if(is.null(penalty.weights.base)){
@@ -276,48 +276,48 @@ StaPLR <- function(x, y, view, view.names = NULL, family = "binomial", correct.f
           if(!is.null(seed)){
             set.seed(z.seeds[k, v])
           }
-          if(anyNA(x[, view == v])){
-            x_train <- na.omit(x[, view == v])
+          if(anyNA(x[, view == v, drop = FALSE])){
+            x_train <- na.omit(x[, view == v, drop = FALSE])
             y_train <-  y[-attr(x_train, "na.action")]
             cvfolds <- folds[-attr(x_train, "na.action")]
           }else{
-            x_train <- x[, view == v]
+            x_train <- x[, view == v, drop = FALSE]
             y_train <- y
             cvfolds <- folds
           }
           if(is.null(penalty.weights.base)){
-            cvf <- glmnet::cv.glmnet(x_train[cvfolds != k, ], y = y_train[cvfolds != k], 
+            cvf <- glmnet::cv.glmnet(x_train[cvfolds != k, , drop = FALSE ], y = y_train[cvfolds != k], 
                                      nfolds = nfolds, family = family,
                                      type.measure = cvloss, alpha = alpha1,
                                      standardize = std.base, lower.limits = ll1,
                                      upper.limits = ul1, parallel = cvparallel, lambda.min.ratio = lambda.ratio,
                                      relax = relax.base)
             newy <- rep(NA, length(y)) 
-            newy[folds == k] <- predict(cvf, newx = x[folds == k, view == v], s = cvlambda, type = metadat)
+            newy[folds == k] <- predict(cvf, newx = x[folds == k, view == v, drop = FALSE], s = cvlambda, type = metadat)
             return(newy)
           }else if(inherits(penalty.weights.base, "list") && length(penalty.weights.base) == V){
             if(ncol(x_train) != length(penalty.weights.base[[v]])){
               stop("The length of each penalty weight vector should be equal to the number of features in that view.")
             }
-            cvf <- glmnet::cv.glmnet(x_train[cvfolds != k, ], y = y_train[cvfolds != k], 
+            cvf <- glmnet::cv.glmnet(x_train[cvfolds != k, , drop = FALSE ], y = y_train[cvfolds != k], 
                                      nfolds = nfolds, family = family,
                                      type.measure = cvloss, alpha = alpha1,
                                      standardize = std.base, lower.limits = ll1,
                                      upper.limits = ul1, parallel = cvparallel, lambda.min.ratio = lambda.ratio,
                                      relax = relax.base, penalty.factor = penalty.weights.base[[v]])
             newy <- rep(NA, length(y)) 
-            newy[folds == k] <- predict(cvf, newx = x[folds == k, view == v], s = cvlambda, type = metadat)
+            newy[folds == k] <- predict(cvf, newx = x[folds == k, view == v, drop = FALSE], s = cvlambda, type = metadat)
             return(newy)
           }else if(identical(penalty.weights.base, "adaptive")){
-            weights <- adaptive_weights(x_train[cvfolds != k, ], y_train[cvfolds != k], nfolds = nfolds, type.measure = cvloss, 
+            weights <- adaptive_weights(x_train[cvfolds != k, , drop = FALSE ], y_train[cvfolds != k], nfolds = nfolds, type.measure = cvloss, 
                                         family = family, standardize = std.base, lower.limits = ll1,
                                         upper.limits = ul1, parallel = cvparallel, lambda.min.ratio=lambda.ratio)
             
-            cvf <- optimize_over_gamma(x_train[cvfolds != k, ], y_train[cvfolds != k], weights, gamma.seq, nfolds = nfolds, type.measure = cvloss, alpha = alpha1,
+            cvf <- optimize_over_gamma(x_train[cvfolds != k, , drop = FALSE ], y_train[cvfolds != k], weights, gamma.seq, nfolds = nfolds, type.measure = cvloss, alpha = alpha1,
                                        family = family, standardize = std.base, lower.limits = ll1, upper.limits = ul1, parallel = cvparallel,
                                        lambda.min.ratio=lambda.ratio, relax = relax.base)
             newy <- rep(NA, length(y)) 
-            newy[folds == k] <- predict(cvf, newx = x[folds == k, view == v], s = cvlambda, type = metadat)
+            newy[folds == k] <- predict(cvf, newx = x[folds == k, view == v, drop = FALSE], s = cvlambda, type = metadat)
             return(newy)
           }else{
             stop("penalty.weights.base must be either NULL, adaptive, or a list of length nviews, with each entry a numeric vector containing penalty weights for each feature within that view.")
@@ -436,17 +436,17 @@ StaPLR <- function(x, y, view, view.names = NULL, family = "binomial", correct.f
       if(!is.null(seed)){
         set.seed(base.seeds[v])
       }
-      if(anyNA(x[, view == v])){
-        if(any(check_partial_missings(x[, view == v]))){
+      if(anyNA(x[, view == v, drop = FALSE])){
+        if(any(check_partial_missings(x[, view == v, drop = FALSE]))){
           warning("Partially missing observations found in view ", v,
                   ". These observations will be treated as if all their values for view ", v,
                   " are missing. It may be more efficient to perform feature-level imputation. The partially missing observations are: ",
-                  paste(which(check_partial_missings(x[, view == v])), collapse = ", "))
+                  paste(which(check_partial_missings(x[, view == v, drop = FALSE])), collapse = ", "))
         }
-        x_train <- na.omit(x[, view == v])
+        x_train <- na.omit(x[, view == v, drop = FALSE])
         y_train <-  y[-attr(x_train, "na.action")]
       }else{
-        x_train <- x[, view == v]
+        x_train <- x[, view == v, drop = FALSE]
         y_train <- y
       }
       if(is.null(penalty.weights.base)){
@@ -483,48 +483,48 @@ StaPLR <- function(x, y, view, view.names = NULL, family = "binomial", correct.f
           if(!is.null(seed)){
             set.seed(z.seeds[k, v])
           }
-          if(anyNA(x[, view == v])){
-            x_train <- na.omit(x[, view == v])
+          if(anyNA(x[, view == v, drop = FALSE])){
+            x_train <- na.omit(x[, view == v, drop = FALSE])
             y_train <-  y[-attr(x_train, "na.action")]
             cvfolds <- folds[-attr(x_train, "na.action")]
           }else{
-            x_train <- x[, view == v]
+            x_train <- x[, view == v, drop = FALSE]
             y_train <- y
             cvfolds <- folds
           }
           if(is.null(penalty.weights.base)){
-            cvf <- glmnet::cv.glmnet(x_train[cvfolds != k, ], y = y_train[cvfolds != k], 
+            cvf <- glmnet::cv.glmnet(x_train[cvfolds != k, , drop = FALSE], y = y_train[cvfolds != k], 
                                      nfolds = nfolds, family = family,
                                      type.measure = cvloss, alpha = alpha1,
                                      standardize = std.base, lower.limits = ll1,
                                      upper.limits = ul1, parallel = cvparallel, lambda.min.ratio = lambda.ratio,
                                      relax = relax.base)
             newy <- rep(NA, length(y)) 
-            newy[folds == k] <- predict(cvf, newx = x[folds == k, view == v], s = cvlambda, type = metadat)
+            newy[folds == k] <- predict(cvf, newx = x[folds == k, view == v, drop = FALSE], s = cvlambda, type = metadat)
             return(newy)
           }else if(inherits(penalty.weights.base, "list") == "list" && length(penalty.weights.base) == V){
             if(ncol(x_train) != length(penalty.weights.base[[v]])){
               stop("The length of each penalty weight vector should be equal to the number of features in that view.")
             }
-            cvf <- glmnet::cv.glmnet(x_train[cvfolds != k, ], y = y_train[cvfolds != k], 
+            cvf <- glmnet::cv.glmnet(x_train[cvfolds != k, , drop = FALSE], y = y_train[cvfolds != k], 
                                      nfolds = nfolds, family = family,
                                      type.measure = cvloss, alpha = alpha1,
                                      standardize = std.base, lower.limits = ll1,
                                      upper.limits = ul1, parallel = cvparallel, lambda.min.ratio = lambda.ratio,
                                      relax = relax.base, penalty.factor = penalty.weights.base[[v]])
             newy <- rep(NA, length(y)) 
-            newy[folds == k] <- predict(cvf, newx = x[folds == k, view == v], s = cvlambda, type = metadat)
+            newy[folds == k] <- predict(cvf, newx = x[folds == k, view == v, drop = FALSE], s = cvlambda, type = metadat)
             return(newy)
           }else if(identical(penalty.weights.base, "adaptive")){
-            weights <- adaptive_weights(x_train[cvfolds != k, ], y_train[cvfolds != k], nfolds = nfolds, type.measure = cvloss, 
+            weights <- adaptive_weights(x_train[cvfolds != k, , drop = FALSE ], y_train[cvfolds != k], nfolds = nfolds, type.measure = cvloss, 
                                         family = family, standardize = std.base, lower.limits = ll1,
                                         upper.limits = ul1, parallel = cvparallel, lambda.min.ratio=lambda.ratio)
             
-            cvf <- optimize_over_gamma(x_train[cvfolds != k, ], y_train[cvfolds != k], weights, gamma.seq, nfolds = nfolds, type.measure = cvloss, alpha = alpha1,
+            cvf <- optimize_over_gamma(x_train[cvfolds != k, , drop = FALSE ], y_train[cvfolds != k], weights, gamma.seq, nfolds = nfolds, type.measure = cvloss, alpha = alpha1,
                                        family = family, standardize = std.base, lower.limits = ll1, upper.limits = ul1, parallel = cvparallel,
                                        lambda.min.ratio=lambda.ratio, relax = relax.base)
             newy <- rep(NA, length(y)) 
-            newy[folds == k] <- predict(cvf, newx = x[folds == k, view == v], s = cvlambda, type = metadat)
+            newy[folds == k] <- predict(cvf, newx = x[folds == k, view == v, drop = FALSE], s = cvlambda, type = metadat)
             return(newy)
           }else{
             stop("penalty.weights.base must be either NULL, adaptive, or a list of length nviews, with each entry a numeric vector containing penalty weights for each feature within that view.")
