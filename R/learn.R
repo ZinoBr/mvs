@@ -37,7 +37,7 @@ learn <- function(X, y, views, type, generate.CVs = TRUE, offsets = NULL, ...) {
     "family"
   )
   
-  staplr_drop <- c("mtry")
+  staplr_drop <- c("mtry", "ntree")
   
   dots_rf     <- dots[setdiff(names(dots), rf_drop)]
   dots_staplr <- dots[setdiff(names(dots), staplr_drop)]
